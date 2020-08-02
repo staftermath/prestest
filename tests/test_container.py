@@ -33,3 +33,8 @@ def test_start_stop_and_is_started(container):
     container.stop()
     result = container.is_started()
     assert not result
+
+
+def test_is_presto_started_return_correct_value(container, start_container):
+    result = container.is_presto_started()
+    assert result

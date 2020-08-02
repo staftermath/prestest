@@ -3,9 +3,12 @@
 import subprocess
 from pathlib import Path, PosixPath
 from typing import Union
-import docker
-
 import logging
+import time
+
+import pandas as pd
+from sqlalchemy import create_engine
+import docker
 
 CONTAINER_NAMES = {
     "hive-metastore": "docker-hive_hive-metastore_1",
@@ -39,3 +42,17 @@ class Container:
                 return False
 
         return True
+
+    def is_presto_started(self):
+        presto_client = create_engine("presto://localhost:8080", connect_args={"protocol": "http"})
+
+        attempts = 5
+        sleep = 5
+        while attempts > 0:
+            try:
+                with presto_client.connect() as con:
+                    pd.read_sql("SELECT * FROM system.runtime.nodes LIMIT 1", con=con)
+                    return True
+            except:
+                attempts -= 1
+                time.sleep(sleep)
