@@ -9,6 +9,7 @@ import time
 import pandas as pd
 from sqlalchemy import create_engine
 import docker
+from docker import APIClient
 
 CONTAINER_NAMES = {
     "hive-metastore": "docker-hive_hive-metastore_1",
@@ -23,6 +24,7 @@ class Container:
     def __init__(self, docker_folder: Union[PosixPath, str]):
         self.docker_folder = Path(docker_folder).resolve()
         self.client = docker.from_env()
+        self.api_client = docker.APIClient()
 
     def start(self):
         command = "docker-compose up -d"
@@ -34,12 +36,33 @@ class Container:
         process = subprocess.Popen(command, cwd=self.docker_folder, shell=True, stdout=subprocess.PIPE)
         process.wait()
 
-    def is_started(self):
+    def is_started(self) -> bool:
         for component, name in CONTAINER_NAMES.items():
             container = self.client.containers.get(name)
             if container.status != "running":
                 logging.debug(f"[{component}] {name} is not running")
                 return False
+
+        return True
+
+    def is_healthy(self) -> bool:
+        """check if container is healthy. if exited containers are contained not healthy. if health condition is not
+        configured, the container is considered healthy.
+
+        :return: whether container is healthy or not.
+        """
+        if not self.is_started():
+            return False
+
+        for component, name in CONTAINER_NAMES.items():
+            # Get health info. if container not up. return empty dict
+
+            state = self.api_client.inspect_container(name)["State"]
+            if "Health" in state:
+                status = state["Health"]["Status"]
+                if status != "healthy":
+                    logging.debug(f"[{component} {name} is not healthy. got {status}")
+                    return False
 
         return True
 
