@@ -9,7 +9,7 @@ import time
 import pandas as pd
 from sqlalchemy import create_engine
 import docker
-from docker import APIClient
+
 
 CONTAINER_NAMES = {
     "hive-metastore": "docker-hive_hive-metastore_1",
@@ -20,23 +20,38 @@ CONTAINER_NAMES = {
     "hive-metastore-postgresql": "docker-hive_hive-metastore-postgresql_1"
 }
 
+
 class Container:
+    """contains method to control and examine hive/presto container used for test
+    """
     def __init__(self, docker_folder: Union[PosixPath, str]):
         self.docker_folder = Path(docker_folder).resolve()
         self.client = docker.from_env()
         self.api_client = docker.APIClient()
 
     def start(self):
+        """start docker containers.
+
+        :return: None
+        """
         command = "docker-compose up -d"
         process = subprocess.Popen(command, cwd=self.docker_folder, shell=True, stdout=subprocess.PIPE)
         process.wait()
 
     def stop(self):
+        """stop containers
+
+        :return:
+        """
         command = f"docker-compose stop"
         process = subprocess.Popen(command, cwd=self.docker_folder, shell=True, stdout=subprocess.PIPE)
         process.wait()
 
     def is_started(self) -> bool:
+        """check if container has properly started.
+
+        :return:
+        """
         for component, name in CONTAINER_NAMES.items():
             container = self.client.containers.get(name)
             if container.status != "running":
@@ -47,7 +62,8 @@ class Container:
 
     def is_healthy(self) -> bool:
         """check if container is healthy. if exited containers are contained not healthy. if health condition is not
-        configured, the container is considered healthy.
+        configured, the container is considered healthy. A healthy container is read to take request such as presto
+        queries.
 
         :return: whether container is healthy or not.
         """
@@ -66,7 +82,12 @@ class Container:
 
         return True
 
-    def is_presto_started(self):
+    def is_presto_started(self) -> bool:
+        """examine if presto server has properly started. This will try 5 times before determining that the server
+        cannot be connected. It will sleep 5 seconds between retries.
+
+        :return: whether presto server is started.
+        """
         presto_client = create_engine("presto://localhost:8080", connect_args={"protocol": "http"})
 
         attempts = 5
@@ -79,3 +100,5 @@ class Container:
             except:
                 attempts -= 1
                 time.sleep(sleep)
+
+        return False
