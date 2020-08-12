@@ -3,9 +3,12 @@ import pytest
 import subprocess
 import time
 
+from docker.errors import APIError
+
 from prestest.container import Container
 
 DOCKER_FOLDER = Path(".").resolve().parent / "docker-hive"
+
 
 @pytest.fixture()
 def container() -> Container:
@@ -67,3 +70,12 @@ def test_is_healthy_return_correct_value(container):
 def test_is_presto_started_return_correct_value(container, start_container):
     result = container.is_presto_started()
     assert result
+
+
+def test_reset_remove_container_correctly(container, start_container):
+    assert container.is_started(), "container not properly started before test"
+
+    container.reset()
+
+    with pytest.raises(APIError):
+        container.is_started()

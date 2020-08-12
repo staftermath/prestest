@@ -102,3 +102,14 @@ class Container:
                 time.sleep(sleep)
 
         return False
+
+    def reset(self):
+        """remove created container. This will clear all data and metastore and restore the container to factory state.
+
+        :return: None
+        """
+        self.stop()
+        for name, container in CONTAINER_NAMES.items():
+            container = self.client.containers.get(container)
+            logging.debug(f"removing container {container} ({container.id})")
+            self.api_client.remove_container(container.id)
