@@ -11,7 +11,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 import docker
 
-
 CONTAINER_NAMES = {
     "hive-metastore": "docker-hive_hive-metastore_1",
     "datanode": "docker-hive_datanode_1",
@@ -24,6 +23,7 @@ CONTAINER_NAMES = {
 LOCAL_FILE_STORE_NODE = "hive-server"
 
 PRESTO_URL = "presto://localhost:8080"
+
 
 class Container:
     """contains method to control and examine hive/presto container used for test

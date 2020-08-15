@@ -7,6 +7,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from .container import PRESTO_URL, Container
 
+
 class DBManager:
     """implement method to create, remove tables in testing framework.
     """
