@@ -18,6 +18,11 @@ def container() -> Container:
 @pytest.fixture()
 def start_container(container):
     container.start()
+    maximum_wait = 40
+    sleep = 3
+    while maximum_wait >= 0 and not container.is_healthy():
+        time.sleep(sleep)
+        maximum_wait -= sleep
 
 
 def test_start_stop_and_is_started(container):
