@@ -124,3 +124,18 @@ def test_copy_from_local_and_download_from_container_copy_file_correctly(contain
     with open(download_file / 'file2.txt', 'r') as f:
         result2 = [l.strip() for l in f.readlines()]
         assert result2 == ['2']
+
+
+def test_upload_temp_table_file_returned_context_manager_working_properly(container, tmpdir):
+    tempfile = Path(tmpdir.join("test_context_manager.txt"))
+    tempfile.write_text("hello word")
+
+    downloaded_file = Path(tmpdir.join("test_context_manager_downloaded.txt"))
+    with container.upload_temp_table_file(tempfile) as uploaded_f:
+        container.download_from_container(uploaded_f, downloaded_file)
+        with open(downloaded_file, 'r') as downloaded_f:
+            l = downloaded_f.readline()
+            assert l == "hello word", "file not properly uploaded by context manager"
+
+    with pytest.raises(RuntimeError):
+        container.download_from_container(uploaded_f, tmpdir.join("should_not_be_downloaded"))

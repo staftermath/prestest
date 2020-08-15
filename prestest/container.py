@@ -5,6 +5,7 @@ from pathlib import Path, PosixPath
 from typing import Union
 import logging
 import time
+import uuid
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -19,6 +20,8 @@ CONTAINER_NAMES = {
     "presto_coordinator": "docker-hive_presto-coordinator_1",
     "hive-metastore-postgresql": "docker-hive_hive-metastore-postgresql_1"
 }
+
+LOCAL_FILE_STORE_NODE = "hive-server"
 
 PRESTO_URL = "presto://localhost:8080"
 
@@ -122,7 +125,7 @@ class Container:
         :param to_container: container path where the folder or file will be copied to.
         :return: None
         """
-        datanode_name = CONTAINER_NAMES["datanode"]
+        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
         command = f"docker cp {from_local} {datanode_name}:{to_container}"
         self.execute_command(command)
 
@@ -133,7 +136,7 @@ class Container:
         :param to_local: location on host.
         :return: None
         """
-        datanode_name = CONTAINER_NAMES["datanode"]
+        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
         command = f"docker cp {datanode_name}:{from_container} {to_local}"
         self.execute_command(command)
 
@@ -143,7 +146,7 @@ class Container:
         :param target: target folder or file
         :return: None
         """
-        datanode_name = CONTAINER_NAMES["datanode"]
+        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
         command = f"docker exec {datanode_name} rm -rf {target}"
         self.execute_command(command)
 
@@ -160,3 +163,22 @@ class Container:
         error = res[1].decode('ascii')
         if error != '':
             raise exception(error)
+
+    def upload_temp_table_file(self, local_file):
+        return TempContainerFile(self, local_file)
+
+
+class TempContainerFile:
+
+    def __init__(self, container: Container, local_file: Union[PosixPath, str]):
+        self.container = container
+        self.local_file = local_file
+        self.temp_file = None
+
+    def __enter__(self):
+        self.temp_file = Path("/tmp") / str(uuid.uuid4())
+        self.container.copy_from_local(self.local_file, self.temp_file)
+        return self.temp_file
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.container.delete(self.temp_file)
