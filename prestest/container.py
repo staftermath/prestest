@@ -124,6 +124,7 @@ class Container:
 
         :param from_local: target folder or file to be copied.
         :param to_container: container path where the folder or file will be copied to.
+        :param container_name: name of the container containing the target file `to_container`
         :return: None
         """
         command = f"docker cp {from_local} {container_name}:{to_container}"
@@ -135,6 +136,7 @@ class Container:
 
         :param from_container: target folder or file to be downloaded to host.
         :param to_local: location on host.
+        :param container_name: name of the container containing the target file `from_container`
         :return: None
         """
         command = f"docker cp {container_name}:{from_container} {to_local}"
@@ -144,6 +146,7 @@ class Container:
         """call rm -rf command on `target` inside datanode container
 
         :param target: target folder or file
+        :param container_name: name of the container containing the target file
         :return: None
         """
         command = f"docker exec {container_name} rm -rf {target}"
@@ -164,16 +167,38 @@ class Container:
             raise exception(f"STDOUT: {stdout}. STDERR: {stderr}")
         return stdout
 
-    def upload_temp_table_file(self, local_file):
-        return TempContainerFile(self, local_file)
+    def upload_temp_table_file(self, local_file, container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
+        """return a context manager to upload the file to a temp file in container. See `TempContainerFile` for details
 
-    def append_file(self, container_name, file, line, skip_if_exists=True, user='root'):
+        :example:
+        >>> with self.upload_temp_table_file('local_file', 'target_container') as f:
+        ...     # do something with f where f is the temporary file name in the container.
+
+        """
+        return TempContainerFile(self, local_file, container_name)
+
+    def append_file(self, container_name, file, text, skip_if_exists=True, user='root', from_new_line=True):
+        """append a line to target `file` in target `container_name`. You can choose to skip (by default) if the text
+        already exists in target file. you may change user in the docker by specifying `user`. If `from_new_line` is
+        True, the text will always be appended in a new line. otherwise directly appended at EOF.
+
+        :param container_name: name of the container the target file is contained in.
+        :param file: target file in the container.
+        :param text: content to append.
+        :param skip_if_exists: if text already exists in file, do not append duplicate. the checking will strip white
+          space.
+        :param user: user used to execute the operation. e.g. 'root', '1000'
+        :param from_new_line: if True, the text will always be appended from a new line.
+        :return: None
+        """
         if skip_if_exists:
-            command_check_if_exists = f"""docker exec -u 1000 -t {container_name} grep "{line.strip()}" {file}"""
+            command_check_if_exists = f"""docker exec -u 1000 -t {container_name} grep "{text.strip()}" {file}"""
             result = self.execute_command(command_check_if_exists)
             if result != '':
                 return
-        command_append = f"""docker exec -u {user} -t {container_name} bash -c 'echo \"\n{line}\" >> {file}'"""
+
+        line_break = "\n" if from_new_line else ""
+        command_append = f"""docker exec -u {user} -t {container_name} bash -c 'echo \"{line_break}{text}\" >> {file}'"""
         self.execute_command(command_append)
 
     def enable_table_modification(self):
@@ -191,12 +216,15 @@ class Container:
         for property in properties:
             self.append_file(container_name=CONTAINER_NAMES["presto_coordinator"],
                              file=catalog_path,
-                             line=property,
+                             text=property,
                              user='root')
 
 
 class TempContainerFile:
-
+    """a context manager class used to upload file to temporary file in target container. You need to pass a Container
+    object and target `container_name`. The temporary file will be removed at exit. Note that the temporary file in
+    target container will have the same permission as `local_file`.
+    """
     def __init__(self, container: Container, local_file: Union[PosixPath, str],
                  container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
         self.container = container
