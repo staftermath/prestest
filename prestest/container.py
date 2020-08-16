@@ -76,7 +76,6 @@ class Container:
 
         for component, name in CONTAINER_NAMES.items():
             # Get health info. if container not up. return empty dict
-
             state = self.api_client.inspect_container(name)["State"]
             if "Health" in state:
                 status = state["Health"]["Status"]
