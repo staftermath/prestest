@@ -179,6 +179,13 @@ def reset_container(request, container):
     request.addfinalizer(fin)
 
 
-def test_enable_table_modification_change_hive_properties_file_correctly(container, reset_container):
+def test_enable_table_modification_change_hive_properties_file_correctly(container, reset_container, tmpdir):
     container.enable_table_modification()
-    assert 1 == 1
+    temp_download = Path(tmpdir.join("temp_download_hive_properties"))
+    container.download_from_container(from_container="/opt/presto-server-0.181/etc/catalog/hive.properties",
+                                      to_local=temp_download,
+                                      container_name=CONTAINER_NAMES["presto_coordinator"])
+    with open(temp_download, 'r') as f:
+        result = set(l.strip() for l in f.readlines() if l.strip() != '')
+    expected = {"hive.allow-drop-table=true", "hive.allow-rename-table=true", "hive.allow-add-column=true"}
+    assert result.issuperset(expected)

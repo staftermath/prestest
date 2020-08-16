@@ -118,36 +118,35 @@ class Container:
             logging.debug(f"removing container {container} ({container.id})")
             self.api_client.remove_container(container.id)
 
-    def copy_from_local(self, from_local: Union[PosixPath, str], to_container: Union[PosixPath, str]):
+    def copy_from_local(self, from_local: Union[PosixPath, str], to_container: Union[PosixPath, str],
+                        container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
         """copy folder or file from host to container
 
         :param from_local: target folder or file to be copied.
         :param to_container: container path where the folder or file will be copied to.
         :return: None
         """
-        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
-        command = f"docker cp {from_local} {datanode_name}:{to_container}"
+        command = f"docker cp {from_local} {container_name}:{to_container}"
         self.execute_command(command)
 
-    def download_from_container(self, from_container, to_local):
+    def download_from_container(self, from_container, to_local,
+                                container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
         """download target folder or file to host
 
         :param from_container: target folder or file to be downloaded to host.
         :param to_local: location on host.
         :return: None
         """
-        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
-        command = f"docker cp {datanode_name}:{from_container} {to_local}"
+        command = f"docker cp {container_name}:{from_container} {to_local}"
         self.execute_command(command)
 
-    def delete(self, target):
+    def delete(self, target, container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
         """call rm -rf command on `target` inside datanode container
 
         :param target: target folder or file
         :return: None
         """
-        datanode_name = CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]
-        command = f"docker exec {datanode_name} rm -rf {target}"
+        command = f"docker exec {container_name} rm -rf {target}"
         self.execute_command(command)
 
     def execute_command(self, command, exception=RuntimeError):
@@ -178,31 +177,37 @@ class Container:
         self.execute_command(command_append)
 
     def enable_table_modification(self):
-        properties = {
-            "hive.allow-drop-table": "true",
-            "hive.allow-rename-table": "true",
-            "hive.allow-add-column": "true"
-        }
+        """edit hive.properties file in presto connector server so that hive table can be modified in presto.
+        note that this may fail if presto server version changes
+
+        :return: None
+        """
+        properties = [
+            "hive.allow-drop-table=true",
+            "hive.allow-rename-table=true",
+            "hive.allow-add-column=true"
+        ]
         catalog_path = "/opt/presto-server-0.181/etc/catalog/hive.properties"
-        for property, value in properties.items():
-            line = f"{property}={value}"
+        for property in properties:
             self.append_file(container_name=CONTAINER_NAMES["presto_coordinator"],
                              file=catalog_path,
-                             line=line,
+                             line=property,
                              user='root')
 
 
 class TempContainerFile:
 
-    def __init__(self, container: Container, local_file: Union[PosixPath, str]):
+    def __init__(self, container: Container, local_file: Union[PosixPath, str],
+                 container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
         self.container = container
+        self.container_name = container_name
         self.local_file = local_file
         self.temp_file = None
 
     def __enter__(self):
         self.temp_file = Path("/tmp") / str(uuid.uuid4())
-        self.container.copy_from_local(self.local_file, self.temp_file)
+        self.container.copy_from_local(self.local_file, self.temp_file, self.container_name)
         return self.temp_file
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.container.delete(self.temp_file)
+        self.container.delete(self.temp_file, self.container_name)
