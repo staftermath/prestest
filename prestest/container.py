@@ -163,10 +163,19 @@ class Container:
         error = res[1].decode('ascii')
         if error != '':
             raise exception(error)
+        return res[0].decode('ascii')
 
     def upload_temp_table_file(self, local_file):
         return TempContainerFile(self, local_file)
 
+    def append_file(self, container_name, file, line, skip_if_exists=True):
+        if skip_if_exists:
+            command_check_if_exists = f"""docker exec -u 1000 -t {container_name} grep "{line}" {file}"""
+            result = self.execute_command(command_check_if_exists)
+            if result != '':
+                return
+        command_append = f"""docker exec -u 1000 -t {container_name} bash -c 'echo \"\n{line}\" >> {file}'"""
+        self.execute_command(command_append)
 
 class TempContainerFile:
 

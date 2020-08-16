@@ -5,7 +5,7 @@ import time
 
 from docker.errors import APIError
 
-from prestest.container import Container
+from prestest.container import Container, CONTAINER_NAMES, LOCAL_FILE_STORE_NODE
 
 DOCKER_FOLDER = Path(".").resolve().parent / "docker-hive"
 
@@ -144,3 +144,22 @@ def test_upload_temp_table_file_returned_context_manager_working_properly(contai
 
     with pytest.raises(RuntimeError):
         container.download_from_container(uploaded_f, tmpdir.join("should_not_be_downloaded"))
+
+
+def test_append_file_add_line_correctly(container, tmpdir):
+    test_line = "hello world"
+    tempfile = Path(tmpdir.join("test_edit_file.txt"))
+    tempfile.write_text(test_line)
+    with container.upload_temp_table_file(tempfile) as uploaded_f:
+        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, test_line)
+        temp_download = Path(tmpdir.join("test_edit_file_downloaded.txt"))
+        container.download_from_container(uploaded_f, temp_download)
+        with open(temp_download, 'r') as download_f:
+            lines = [l.strip() for l in download_f.readlines()]
+            assert lines == [test_line], "should not change content if line already exists"
+
+        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, "this is a new line")
+        container.download_from_container(uploaded_f, temp_download)
+        with open(temp_download, 'r') as download_f:
+            lines = [l.strip() for l in download_f.readlines()]
+            assert lines == [test_line, "this is a new line"], "should append line when it doesn't exists"
