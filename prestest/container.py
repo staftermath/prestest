@@ -160,22 +160,37 @@ class Container:
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process.wait()
         res = process.communicate()
-        error = res[1].decode('ascii')
-        if error != '':
-            raise exception(error)
-        return res[0].decode('ascii')
+        stdout, stderr = res[0].decode('ascii'), res[1].decode('ascii')
+        if stderr != '' or 'permission denied' in stdout.lower():
+            raise exception(f"STDOUT: {stdout}. STDERR: {stderr}")
+        return stdout
 
     def upload_temp_table_file(self, local_file):
         return TempContainerFile(self, local_file)
 
-    def append_file(self, container_name, file, line, skip_if_exists=True):
+    def append_file(self, container_name, file, line, skip_if_exists=True, user='root'):
         if skip_if_exists:
-            command_check_if_exists = f"""docker exec -u 1000 -t {container_name} grep "{line}" {file}"""
+            command_check_if_exists = f"""docker exec -u 1000 -t {container_name} grep "{line.strip()}" {file}"""
             result = self.execute_command(command_check_if_exists)
             if result != '':
                 return
-        command_append = f"""docker exec -u 1000 -t {container_name} bash -c 'echo \"\n{line}\" >> {file}'"""
+        command_append = f"""docker exec -u {user} -t {container_name} bash -c 'echo \"\n{line}\" >> {file}'"""
         self.execute_command(command_append)
+
+    def enable_table_modification(self):
+        properties = {
+            "hive.allow-drop-table": "true",
+            "hive.allow-rename-table": "true",
+            "hive.allow-add-column": "true"
+        }
+        catalog_path = "/opt/presto-server-0.181/etc/catalog/hive.properties"
+        for property, value in properties.items():
+            line = f"{property}={value}"
+            self.append_file(container_name=CONTAINER_NAMES["presto_coordinator"],
+                             file=catalog_path,
+                             line=line,
+                             user='root')
+
 
 class TempContainerFile:
 

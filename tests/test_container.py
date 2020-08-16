@@ -3,7 +3,7 @@ import pytest
 import subprocess
 import time
 
-from docker.errors import APIError
+from docker.errors import APIError, NotFound
 
 from prestest.container import Container, CONTAINER_NAMES, LOCAL_FILE_STORE_NODE
 
@@ -131,7 +131,7 @@ def test_copy_from_local_and_download_from_container_copy_file_correctly(contain
         assert result2 == ['2']
 
 
-def test_upload_temp_table_file_returned_context_manager_working_properly(container, tmpdir):
+def test_upload_temp_table_file_returned_context_manager_working_properly(container, start_container, tmpdir):
     tempfile = Path(tmpdir.join("test_context_manager.txt"))
     tempfile.write_text("hello word")
 
@@ -146,20 +146,39 @@ def test_upload_temp_table_file_returned_context_manager_working_properly(contai
         container.download_from_container(uploaded_f, tmpdir.join("should_not_be_downloaded"))
 
 
-def test_append_file_add_line_correctly(container, tmpdir):
+def test_append_file_add_line_correctly(container, start_container, tmpdir):
     test_line = "hello world"
     tempfile = Path(tmpdir.join("test_edit_file.txt"))
     tempfile.write_text(test_line)
     with container.upload_temp_table_file(tempfile) as uploaded_f:
-        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, test_line)
+        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, test_line, user='1000')
         temp_download = Path(tmpdir.join("test_edit_file_downloaded.txt"))
         container.download_from_container(uploaded_f, temp_download)
         with open(temp_download, 'r') as download_f:
             lines = [l.strip() for l in download_f.readlines()]
             assert lines == [test_line], "should not change content if line already exists"
 
-        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, "this is a new line")
+        container.append_file(CONTAINER_NAMES[LOCAL_FILE_STORE_NODE], uploaded_f, "this is a new line", user='1000')
         container.download_from_container(uploaded_f, temp_download)
         with open(temp_download, 'r') as download_f:
             lines = [l.strip() for l in download_f.readlines()]
             assert lines == [test_line, "this is a new line"], "should append line when it doesn't exists"
+
+
+@pytest.fixture()
+def reset_container(request, container):
+    try:
+        container.reset()
+    except NotFound:
+        pass
+
+    container.start()
+    def fin():
+        container.reset()
+
+    request.addfinalizer(fin)
+
+
+def test_enable_table_modification_change_hive_properties_file_correctly(container, reset_container):
+    container.enable_table_modification()
+    assert 1 == 1
