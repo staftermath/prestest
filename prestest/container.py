@@ -33,7 +33,7 @@ class Container:
         self.client = docker.from_env()
         self.api_client = docker.APIClient()
 
-    def start(self):
+    def start(self, until_started=True):
         """start docker containers.
 
         :return: None
@@ -41,6 +41,16 @@ class Container:
         command = "docker-compose up -d"
         process = subprocess.Popen(command, cwd=self.docker_folder, shell=True, stdout=subprocess.PIPE)
         process.wait()
+        if until_started:
+            maximum_wait = 40
+            sleep = 3
+            while maximum_wait >= 0 and not self.is_healthy():
+                time.sleep(sleep)
+                maximum_wait -= sleep
+
+            if maximum_wait < 0 and not self.is_healthy():
+                raise RuntimeError("docker is not started in time")
+
 
     def stop(self):
         """stop containers
@@ -107,9 +117,12 @@ class Container:
 
         return False
 
-    def reset(self):
+    def reset(self, allow_table_modification=False, autostart=False, until_started=False):
         """remove created container. This will clear all data and metastore and restore the container to factory state.
 
+        :param allow_table_modification: reset and allow presto connector to modify hive tables
+        :param autostart: restart container after reset
+        :param until_started: wait until completed restarted. if True, container will be force autostarted.
         :return: None
         """
         self.stop()
@@ -117,6 +130,22 @@ class Container:
             container = self.client.containers.get(container)
             logging.debug(f"removing container {container} ({container.id})")
             self.api_client.remove_container(container.id)
+
+        # start reset container
+        if until_started:
+            # force autostart if requested to complete start
+            autostart = True
+
+        if allow_table_modification or autostart:
+            # both require start container
+            self.start(until_started)
+
+        if allow_table_modification:
+            self.enable_table_modification()
+
+        if not autostart:
+            self.stop()
+
 
     def copy_from_local(self, from_local: Union[PosixPath, str], to_container: Union[PosixPath, str],
                         container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):

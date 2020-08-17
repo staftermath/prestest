@@ -17,12 +17,7 @@ def container() -> Container:
 
 @pytest.fixture()
 def start_container(container):
-    container.start()
-    maximum_wait = 40
-    sleep = 3
-    while maximum_wait >= 0 and not container.is_healthy():
-        time.sleep(sleep)
-        maximum_wait -= sleep
+    container.start(until_started=True)
 
 
 def test_start_stop_and_is_started(container):
@@ -58,7 +53,7 @@ def test_is_healthy_return_correct_value(container):
     result = container.is_healthy()
     assert not result, "should not be healthy when not started"
 
-    container.start()
+    container.start(until_started=False)
     result = container.is_healthy()# If test is paused (for example, debug), this may fail
     assert not result, "should not be healthy when just started"
 
