@@ -13,7 +13,7 @@ def test_container_set_docker_folder_correctly(container):
 
 
 @pytest.mark.prestest(reset=True)
-def test_start_container_disable_table_modification_fail(start_container, container, tmpdir):
+def test_start_container_disable_table_modification_do_not_change_hive_properties(start_container, container, tmpdir):
     temp_download = Path(tmpdir.join("test_start_container_enable_table_modification_hive_properties"))
     container.download_from_container(from_container="/opt/presto-server-0.181/etc/catalog/hive.properties",
                                       to_local=temp_download,
