@@ -2,11 +2,14 @@
 """
 from pathlib import PosixPath
 from typing import Union
+import logging
+import time
 
 import pandas as pd
+from thrift.transport.TTransport import TTransportException
 from sqlalchemy import create_engine
-from .container import PRESTO_URL, Container
 
+from .container import PRESTO_URL, Container
 
 class DBManager:
     """implement method to create, remove tables in testing framework.
@@ -33,7 +36,19 @@ class DBManager:
         """
         schema, _ = table.split(".")
         create_db = f"""CREATE DATABASE IF NOT EXISTS {schema}"""
-        self.hive_client.execute(create_db)
+        repeat = 3
+
+        while repeat > 0:
+            try:
+                self.hive_client.execute(create_db)
+                break
+            except TTransportException as e:
+                logging.warning(f"error connecting to database. {e}")
+                time.sleep(3)
+                repeat -= 1
+        else:
+            raise RuntimeError("presto database cannot be connected probably.")
+
         self.drop_table(table)
 
         with self.container.upload_temp_table_file(local_file=file) as filename:
