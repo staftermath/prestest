@@ -11,11 +11,12 @@ resource_folder = Path(".").resolve() / "resources"
 
 
 @pytest.fixture()
-def db_manager(start_container):
+def db_manager():
     return DBManager(docker_folder=DOCKER_FOLDER)
 
 
-def test_db_manager_create_drop_table_and_read_correctly(db_manager):
+@pytest.mark.prestest(until_started=True)
+def test_db_manager_create_drop_table_and_read_correctly(start_container, db_manager):
     table_name = "test_db.test_table"
     query = f"""CREATE TABLE {table_name} (
         col1 INTEGER,

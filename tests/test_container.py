@@ -6,6 +6,7 @@ import time
 from docker.errors import APIError, NotFound
 
 from prestest.container import Container, CONTAINER_NAMES, LOCAL_FILE_STORE_NODE
+from prestest.utils import get_prestest_params
 
 DOCKER_FOLDER = Path(".").resolve().parent / "docker-hive"
 
@@ -94,18 +95,15 @@ def test_delete_remove_file_from_container_correctly(container, start_container,
 
 
 @pytest.fixture()
-def create_dummy_folders(request, tmpdir, container):
+def create_dummy_folders(tmpdir, container):
     test_folder = Path(tmpdir.join("test_folder"))
     test_folder.mkdir()
     (test_folder / "file1.txt").write_text("1")
     (test_folder / "file2.txt").write_text("2")
 
-    def fin():
-        container.delete("/tmp/test_folder")
+    yield test_folder
 
-    request.addfinalizer(fin)
-
-    return test_folder
+    container.delete("/tmp/test_folder")
 
 
 def test_copy_from_local_and_download_from_container_copy_file_correctly(container, start_container, create_dummy_folders,
@@ -166,12 +164,11 @@ def reset_container(request, container):
         container.reset()
     except NotFound:
         pass
+    until_started = get_prestest_params(request, "until_started", False)
+    container.start(until_started=until_started)
+    yield
 
-    container.start()
-    def fin():
-        container.reset()
-
-    request.addfinalizer(fin)
+    container.reset()
 
 
 def test_enable_table_modification_change_hive_properties_file_correctly(container, reset_container, tmpdir):
