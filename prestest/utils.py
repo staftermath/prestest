@@ -11,8 +11,8 @@ def get_prestest_params(request: SubRequest, param: str, default):
     :return: value of param, or default if not found
     """
     container_param = request.node.get_closest_marker("prestest")
-    if container_param is None:
+    try:
+        value = container_param.kwargs.get(param, default)
+        return value
+    except:
         return default
-
-    value = container_param.args[0].get(param)
-    return value
