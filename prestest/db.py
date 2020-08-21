@@ -40,7 +40,7 @@ class DBManager:
 
         while repeat > 0:
             try:
-                self.hive_client.execute(create_db)
+                self.run_hive_query(create_db)
                 break
             except TTransportException as e:
                 logging.warning(f"error connecting to database. {e}")
@@ -52,9 +52,9 @@ class DBManager:
         self.drop_table(table)
 
         with self.container.upload_temp_table_file(local_file=file) as filename:
-            self.hive_client.execute(query)
+            self.run_hive_query(query)
             insert_to_table = f"""LOAD DATA LOCAL INPATH '{filename}' OVERWRITE INTO TABLE {table}"""
-            self.hive_client.execute(insert_to_table)
+            self.run_hive_query(insert_to_table)
 
     def drop_table(self, table:str):
         """drop target table in container hive.
@@ -63,7 +63,7 @@ class DBManager:
         :return: None
         """
         drop_table = f"""DROP TABLE IF EXISTS {table}"""
-        self.hive_client.execute(drop_table)
+        self.run_hive_query(drop_table)
 
     def read_sql(self, query: str) -> pd.DataFrame:
         """download presto query result into a pandas dataframe.
@@ -74,3 +74,11 @@ class DBManager:
         with self.presto_client.connect() as con:
             df = pd.read_sql(query, con=con)
         return df
+
+    def run_hive_query(self, query: str):
+        """execute a hive query
+
+        :param query: hive query string
+        :return: None
+        """
+        self.hive_client.execute(query)
