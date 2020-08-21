@@ -10,6 +10,7 @@ import uuid
 import pandas as pd
 from sqlalchemy import create_engine
 import docker
+from docker.errors import NotFound
 
 CONTAINER_NAMES = {
     "hive-metastore": "docker-hive_hive-metastore_1",
@@ -126,26 +127,27 @@ class Container:
         :return: None
         """
         self.stop()
+        # start reset container
         for name, container in CONTAINER_NAMES.items():
-            container = self.client.containers.get(container)
+            try:
+                container = self.client.containers.get(container)
+            except NotFound:
+                continue
             logging.debug(f"removing container {container} ({container.id})")
             self.api_client.remove_container(container.id)
 
-        # start reset container
         if until_started:
             # force autostart if requested to complete start
             autostart = True
 
-        if allow_table_modification or autostart:
-            # both require start container
-            self.start(until_started)
-
         if allow_table_modification:
+            self.start()
             self.enable_table_modification()
-
-        if not autostart:
+            # table access require docker restart
             self.stop()
 
+        if autostart:
+            self.start(until_started)
 
     def copy_from_local(self, from_local: Union[PosixPath, str], to_container: Union[PosixPath, str],
                         container_name: str=CONTAINER_NAMES[LOCAL_FILE_STORE_NODE]):
@@ -246,7 +248,8 @@ class Container:
             self.append_file(container_name=CONTAINER_NAMES["presto_coordinator"],
                              file=catalog_path,
                              text=property,
-                             user='root')
+                             user='root',
+                             from_new_line=False)
 
 
 class TempContainerFile:

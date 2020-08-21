@@ -1,8 +1,13 @@
 import pytest
 from pathlib import Path
 
+from pandas.testing import assert_frame_equal
+import pandas as pd
+from sqlalchemy.exc import DatabaseError
+
 from prestest.fixtures import container, start_container
 from prestest.container import CONTAINER_NAMES
+from tests.test_db import db_manager
 
 resource_folder = Path(".").resolve() / "resources"
 
@@ -46,3 +51,35 @@ def test_start_container_reset_correctly(start_container, container, tmpdir):
         result = set(l.strip() for l in f.readlines() if l.strip() != '')
     expected = {"hive.allow-drop-table=true", "hive.allow-rename-table=true", "hive.allow-add-column=true"}
     assert not result.intersection(expected)
+
+
+@pytest.fixture()
+def clean_up_table(db_manager):
+    table_name = "sandbox.test_table"
+    db_manager.drop_table(table=table_name)
+    db_manager.run_hive_query(f"CREATE DATABASE IF NOT EXISTS sandbox")
+    yield table_name
+    db_manager.drop_table(table=table_name)
+    db_manager.run_hive_query(f"DROP DATABASE IF EXISTS sandbox")
+
+
+@pytest.mark.prestest(allow_table_modification=True, reset=True)
+def test_start_container_enable_table_modification_allow_presto_table_creation_and_drop(
+        start_container, db_manager, clean_up_table):
+    table_name = clean_up_table
+    create_table = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} AS
+    SELECT 
+        1 AS col1,
+        'dummy' AS col2
+    """
+    db_manager.read_sql(create_table)
+
+    select_table = f"SELECT * FROM {table_name}"
+    result = db_manager.read_sql(select_table)
+    expected = pd.DataFrame({"col1": [1], "col2": ["dummy"]})
+    assert_frame_equal(result, expected)
+
+    db_manager.read_sql(f"DROP TABLE {table_name}")
+    with pytest.raises(DatabaseError):
+        db_manager.read_sql(select_table)
