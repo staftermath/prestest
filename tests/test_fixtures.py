@@ -5,9 +5,8 @@ from pandas.testing import assert_frame_equal
 import pandas as pd
 from sqlalchemy.exc import DatabaseError
 
-from prestest.fixtures import container, start_container
+from prestest.fixtures import container, start_container, db_manager, create_temporary_table
 from prestest.container import CONTAINER_NAMES
-from tests.test_db import db_manager
 
 resource_folder = Path(".").resolve() / "resources"
 
@@ -15,6 +14,11 @@ resource_folder = Path(".").resolve() / "resources"
 @pytest.mark.prestest(container_folder=resource_folder)
 def test_container_set_docker_folder_correctly(container):
     assert container.docker_folder == resource_folder
+
+
+@pytest.mark.prestest(container_folder=resource_folder)
+def test_db_manager_set_docker_folder_correctly(db_manager):
+    assert db_manager.container.docker_folder == resource_folder
 
 
 @pytest.mark.prestest(reset=True)
@@ -83,3 +87,21 @@ def test_start_container_enable_table_modification_allow_presto_table_creation_a
     db_manager.read_sql(f"DROP TABLE {table_name}")
     with pytest.raises(DatabaseError):
         db_manager.read_sql(select_table)
+
+
+create_temporary_table_query = """CREATE TABLE {table_name} (
+    col1 INTEGER,
+    col2 STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','    
+STORED AS TEXTFILE
+"""
+
+
+@pytest.mark.prestest(table_name="sandbox.test_temp_table", query=create_temporary_table_query,
+                      file=resource_folder / "sample_table.csv")
+def test_create_temporary_table_create_table_correctly(create_temporary_table, db_manager):
+    result = db_manager.read_sql("SELECT * FROM sandbox.test_temp_table")
+    expected = pd.DataFrame({"col1": [123, 456], "col2": ["abc", "cba"]})
+    assert_frame_equal(result, expected)
