@@ -131,10 +131,10 @@ class Container:
         for name, container in CONTAINER_NAMES.items():
             try:
                 container = self.client.containers.get(container)
+                logging.debug(f"removing container {container} ({container.id})")
+                self.api_client.remove_container(container.id)
             except NotFound:
                 continue
-            logging.debug(f"removing container {container} ({container.id})")
-            self.api_client.remove_container(container.id)
 
         if until_started:
             # force autostart if requested to complete start
