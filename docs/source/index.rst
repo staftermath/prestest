@@ -85,3 +85,5 @@ To use in your test:
        # test that the table is properly dropped
        with pytest.raises(DatabaseError):
            db_manager.read_sql(select_table)
+
+Some fixtures can be configured through :code:`@pytext.mark.prestest`. See :ref:`fixtures` for details.
