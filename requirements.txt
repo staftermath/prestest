@@ -4,3 +4,4 @@ pyhive
 thrift==0.13.0
 sasl==0.2.1
 thrift_sasl==0.3.0
+pytest>=6.0.1
