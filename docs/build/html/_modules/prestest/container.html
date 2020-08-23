@@ -1,0 +1,475 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>prestest.container &mdash; prestest 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> prestest
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../container.html">Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../fixtures.html">Fixture Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../fixtures.html#id3">Fixtures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">prestest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>prestest.container</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for prestest.container</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;implement functions to build, start, stop and clean up containers</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span><span class="p">,</span> <span class="n">PosixPath</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+<span class="kn">import</span> <span class="nn">docker</span>
+<span class="kn">from</span> <span class="nn">docker.errors</span> <span class="kn">import</span> <span class="n">NotFound</span>
+
+<span class="n">CONTAINER_NAMES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;hive-metastore&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_hive-metastore_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;datanode&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_datanode_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;namenode&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_namenode_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hive-server&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_hive-server_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;presto_coordinator&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_presto-coordinator_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hive-metastore-postgresql&quot;</span><span class="p">:</span> <span class="s2">&quot;docker-hive_hive-metastore-postgresql_1&quot;</span>
+<span class="p">}</span>
+
+<span class="n">LOCAL_FILE_STORE_NODE</span> <span class="o">=</span> <span class="s2">&quot;hive-server&quot;</span>
+
+<span class="n">PRESTO_URL</span> <span class="o">=</span> <span class="s2">&quot;presto://localhost:8080&quot;</span>
+
+
+<div class="viewcode-block" id="Container"><a class="viewcode-back" href="../../container.html#prestest.container.Container">[docs]</a><span class="k">class</span> <span class="nc">Container</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;contains method to control and examine hive/presto container used for test</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">docker_folder</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PosixPath</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">docker_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">docker_folder</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">docker</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_client</span> <span class="o">=</span> <span class="n">docker</span><span class="o">.</span><span class="n">APIClient</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Container.start"><a class="viewcode-back" href="../../container.html#prestest.container.Container.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">until_started</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;start docker containers.</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="s2">&quot;docker-compose up -d&quot;</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docker_folder</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">until_started</span><span class="p">:</span>
+            <span class="n">maximum_wait</span> <span class="o">=</span> <span class="mi">40</span>
+            <span class="n">sleep</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="k">while</span> <span class="n">maximum_wait</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_healthy</span><span class="p">():</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">sleep</span><span class="p">)</span>
+                <span class="n">maximum_wait</span> <span class="o">-=</span> <span class="n">sleep</span>
+
+            <span class="k">if</span> <span class="n">maximum_wait</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_healthy</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;docker is not started in time&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Container.stop"><a class="viewcode-back" href="../../container.html#prestest.container.Container.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;stop containers</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;docker-compose stop&quot;</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">docker_folder</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Container.is_started"><a class="viewcode-back" href="../../container.html#prestest.container.Container.is_started">[docs]</a>    <span class="k">def</span> <span class="nf">is_started</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;check if container has properly started.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">component</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">CONTAINER_NAMES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">containers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">container</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;running&quot;</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not running&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Container.is_healthy"><a class="viewcode-back" href="../../container.html#prestest.container.Container.is_healthy">[docs]</a>    <span class="k">def</span> <span class="nf">is_healthy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;check if container is healthy. if exited containers are contained not healthy. if health condition is not</span>
+<span class="sd">        configured, the container is considered healthy. A healthy container is read to take request such as presto</span>
+<span class="sd">        queries.</span>
+
+<span class="sd">        :return: whether container is healthy or not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">component</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">CONTAINER_NAMES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Get health info. if container not up. return empty dict</span>
+
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_client</span><span class="o">.</span><span class="n">inspect_container</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="s2">&quot;State&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;Health&quot;</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;Health&quot;</span><span class="p">][</span><span class="s2">&quot;Status&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;healthy&quot;</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not healthy. got </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Container.is_presto_started"><a class="viewcode-back" href="../../container.html#prestest.container.Container.is_presto_started">[docs]</a>    <span class="k">def</span> <span class="nf">is_presto_started</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;examine if presto server has properly started. This will try 5 times before determining that the server</span>
+<span class="sd">        cannot be connected. It will sleep 5 seconds between retries.</span>
+
+<span class="sd">        :return: whether presto server is started.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">presto_client</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">PRESTO_URL</span><span class="p">,</span> <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;protocol&quot;</span><span class="p">:</span> <span class="s2">&quot;http&quot;</span><span class="p">})</span>
+
+        <span class="n">attempts</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">sleep</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="k">while</span> <span class="n">attempts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">presto_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+                    <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM system.runtime.nodes LIMIT 1&quot;</span><span class="p">,</span> <span class="n">con</span><span class="o">=</span><span class="n">con</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">attempts</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">sleep</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Container.reset"><a class="viewcode-back" href="../../container.html#prestest.container.Container.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_table_modification</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">autostart</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">until_started</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;remove created container. This will clear all data and metastore and restore the container to factory state.</span>
+
+<span class="sd">        :param allow_table_modification: reset and allow presto connector to modify hive tables</span>
+<span class="sd">        :param autostart: restart container after reset</span>
+<span class="sd">        :param until_started: wait until completed restarted. if True, container will be force autostarted.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="c1"># start reset container</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">container</span> <span class="ow">in</span> <span class="n">CONTAINER_NAMES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">containers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">container</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;removing container </span><span class="si">{</span><span class="n">container</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">container</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">api_client</span><span class="o">.</span><span class="n">remove_container</span><span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">NotFound</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">until_started</span><span class="p">:</span>
+            <span class="c1"># force autostart if requested to complete start</span>
+            <span class="n">autostart</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">allow_table_modification</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enable_table_modification</span><span class="p">()</span>
+            <span class="c1"># table access require docker restart</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">autostart</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">until_started</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.copy_from_local"><a class="viewcode-back" href="../../container.html#prestest.container.Container.copy_from_local">[docs]</a>    <span class="k">def</span> <span class="nf">copy_from_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_local</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PosixPath</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">to_container</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PosixPath</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+                        <span class="n">container_name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="n">LOCAL_FILE_STORE_NODE</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;copy folder or file from host to container</span>
+
+<span class="sd">        :param from_local: target folder or file to be copied.</span>
+<span class="sd">        :param to_container: container path where the folder or file will be copied to.</span>
+<span class="sd">        :param container_name: name of the container containing the target file `to_container`</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;docker cp </span><span class="si">{</span><span class="n">from_local</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">to_container</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.download_from_container"><a class="viewcode-back" href="../../container.html#prestest.container.Container.download_from_container">[docs]</a>    <span class="k">def</span> <span class="nf">download_from_container</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_container</span><span class="p">,</span> <span class="n">to_local</span><span class="p">,</span>
+                                <span class="n">container_name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="n">LOCAL_FILE_STORE_NODE</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;download target folder or file to host</span>
+
+<span class="sd">        :param from_container: target folder or file to be downloaded to host.</span>
+<span class="sd">        :param to_local: location on host.</span>
+<span class="sd">        :param container_name: name of the container containing the target file `from_container`</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;docker cp </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">from_container</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">to_local</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.delete"><a class="viewcode-back" href="../../container.html#prestest.container.Container.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">container_name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="n">LOCAL_FILE_STORE_NODE</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;call rm -rf command on `target` inside datanode container</span>
+
+<span class="sd">        :param target: target folder or file</span>
+<span class="sd">        :param container_name: name of the container containing the target file</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;docker exec </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2"> rm -rf </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.execute_command"><a class="viewcode-back" href="../../container.html#prestest.container.Container.execute_command">[docs]</a>    <span class="k">def</span> <span class="nf">execute_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="ne">RuntimeError</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;execute a command as subprocess, raise specific type of exception if any error occurs.</span>
+
+<span class="sd">        :param command: a string of terminal command</span>
+<span class="sd">        :param exception: type of exception raised when any error happends.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+        <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">),</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stderr</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span> <span class="ow">or</span> <span class="s1">&#39;permission denied&#39;</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;STDOUT: </span><span class="si">{</span><span class="n">stdout</span><span class="si">}</span><span class="s2">. STDERR: </span><span class="si">{</span><span class="n">stderr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">stdout</span></div>
+
+<div class="viewcode-block" id="Container.upload_temp_table_file"><a class="viewcode-back" href="../../container.html#prestest.container.Container.upload_temp_table_file">[docs]</a>    <span class="k">def</span> <span class="nf">upload_temp_table_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_file</span><span class="p">,</span> <span class="n">container_name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="n">LOCAL_FILE_STORE_NODE</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;return a context manager to upload the file to a temp file in container. See `TempContainerFile` for details</span>
+
+<span class="sd">        :example:</span>
+<span class="sd">        &gt;&gt;&gt; with self.upload_temp_table_file(&#39;local_file&#39;, &#39;target_container&#39;) as f:</span>
+<span class="sd">        ...     # do something with f where f is the temporary file name in the container.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">TempContainerFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_file</span><span class="p">,</span> <span class="n">container_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.append_file"><a class="viewcode-back" href="../../container.html#prestest.container.Container.append_file">[docs]</a>    <span class="k">def</span> <span class="nf">append_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container_name</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">skip_if_exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="n">from_new_line</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;append a line to target `file` in target `container_name`. You can choose to skip (by default) if the text</span>
+<span class="sd">        already exists in target file. you may change user in the docker by specifying `user`. If `from_new_line` is</span>
+<span class="sd">        True, the text will always be appended in a new line. otherwise directly appended at EOF.</span>
+
+<span class="sd">        :param container_name: name of the container the target file is contained in.</span>
+<span class="sd">        :param file: target file in the container.</span>
+<span class="sd">        :param text: content to append.</span>
+<span class="sd">        :param skip_if_exists: if text already exists in file, do not append duplicate. the checking will strip white</span>
+<span class="sd">          space.</span>
+<span class="sd">        :param user: user used to execute the operation. e.g. &#39;root&#39;, &#39;1000&#39;</span>
+<span class="sd">        :param from_new_line: if True, the text will always be appended from a new line.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">skip_if_exists</span><span class="p">:</span>
+            <span class="n">command_check_if_exists</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;docker exec -u 1000 -t </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2"> grep &quot;</span><span class="si">{</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="n">command_check_if_exists</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">return</span>
+
+        <span class="n">line_break</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">from_new_line</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">command_append</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;docker exec -u </span><span class="si">{</span><span class="n">user</span><span class="si">}</span><span class="s2"> -t </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2"> bash -c &#39;echo </span><span class="se">\&quot;</span><span class="si">{</span><span class="n">line_break</span><span class="si">}{</span><span class="n">text</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2"> &gt;&gt; </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&#39;&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="n">command_append</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Container.enable_table_modification"><a class="viewcode-back" href="../../container.html#prestest.container.Container.enable_table_modification">[docs]</a>    <span class="k">def</span> <span class="nf">enable_table_modification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;edit hive.properties file in presto connector server so that hive table can be modified in presto.</span>
+<span class="sd">        note that this may fail if presto server version changes</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;hive.allow-drop-table=true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hive.allow-rename-table=true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hive.allow-add-column=true&quot;</span>
+        <span class="p">]</span>
+        <span class="n">catalog_path</span> <span class="o">=</span> <span class="s2">&quot;/opt/presto-server-0.181/etc/catalog/hive.properties&quot;</span>
+        <span class="k">for</span> <span class="nb">property</span> <span class="ow">in</span> <span class="n">properties</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append_file</span><span class="p">(</span><span class="n">container_name</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="s2">&quot;presto_coordinator&quot;</span><span class="p">],</span>
+                             <span class="n">file</span><span class="o">=</span><span class="n">catalog_path</span><span class="p">,</span>
+                             <span class="n">text</span><span class="o">=</span><span class="nb">property</span><span class="p">,</span>
+                             <span class="n">user</span><span class="o">=</span><span class="s1">&#39;root&#39;</span><span class="p">,</span>
+                             <span class="n">from_new_line</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TempContainerFile"><a class="viewcode-back" href="../../container.html#prestest.container.TempContainerFile">[docs]</a><span class="k">class</span> <span class="nc">TempContainerFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;a context manager class used to upload file to temporary file in target container. You need to pass a Container</span>
+<span class="sd">    object and target `container_name`. The temporary file will be removed at exit. Note that the temporary file in</span>
+<span class="sd">    target container will have the same permission as `local_file`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">Container</span><span class="p">,</span> <span class="n">local_file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PosixPath</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+                 <span class="n">container_name</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="n">CONTAINER_NAMES</span><span class="p">[</span><span class="n">LOCAL_FILE_STORE_NODE</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="n">container</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span> <span class="o">=</span> <span class="n">container_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_file</span> <span class="o">=</span> <span class="n">local_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">copy_from_local</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_file</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Weiwen Gu
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

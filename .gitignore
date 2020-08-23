@@ -4,3 +4,4 @@ dist/
 prestest.egg-info/
 prestest/__pycache__/
 
+!docs/build
