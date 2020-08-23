@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Fixture Parameters &mdash; prestest 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utils" href="utils.html" />
+    <link rel="prev" title="DB" href="db.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> prestest
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="container.html">Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">DB</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Fixture Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#container">container</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#db-manager">db_manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#start-container">start_container</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#create-temporary-table">create_temporary_table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#id3">Fixtures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">prestest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Fixture Parameters</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fixtures.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="fixture-parameters">
+<span id="fixtures"></span><h1>Fixture Parameters<a class="headerlink" href="#fixture-parameters" title="Permalink to this headline">¶</a></h1>
+<p>Fixtures need to be imported together to avoid missing depdencies.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">prestest.fixtures</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+<p>Some fixtures can be configured at runtime by passing certain argument through <code class="code docutils literal notranslate"><span class="pre">&#64;pytest.mark.prestest</span></code>.</p>
+<div class="section" id="container">
+<span id="fixture-container"></span><h2>container<a class="headerlink" href="#container" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><strong>Scope</strong>: “function”</p></li>
+<li><p><strong>Functinality</strong>: a Container class containing methods to operate containers used in prestest</p></li>
+<li><p><strong>Dependencies</strong>: None</p></li>
+<li><p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">prestest</span><span class="p">(</span><span class="n">container_folder</span><span class="o">=</span><span class="s2">&quot;Your docker hive folder&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl class="simple">
+<dt>container_folder</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: PosixPath or str</p></li>
+<li><p><strong>Required</strong>: No</p></li>
+<li><p><strong>Default</strong>: ‘./docker-hive’</p></li>
+<li><p><strong>Functionality</strong>: docker hive repository folder location. It must be cloned from
+<a class="reference external" href="https://github.com/big-data-europe/docker-hive">docker-hive</a>.    +</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="db-manager">
+<span id="fixture-db-manager"></span><h2>db_manager<a class="headerlink" href="#db-manager" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><strong>Scope</strong>: “function”</p></li>
+<li><p><strong>Functinality</strong>: a DBManager class containing methods to run presto queries.</p></li>
+<li><p><strong>Dependencies</strong>: None</p></li>
+<li><p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">prestest</span><span class="p">(</span><span class="n">container_folder</span><span class="o">=</span><span class="s2">&quot;Your docker hive folder&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl class="simple">
+<dt>container_folder</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: PosixPath or str</p></li>
+<li><p><strong>Required</strong>: No</p></li>
+<li><p><strong>Default</strong>: ‘./docker-hive’</p></li>
+<li><p><strong>Functionality</strong>: docker hive repository folder location. It must be cloned from
+<a class="reference external" href="https://github.com/big-data-europe/docker-hive">docker-hive</a>.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="start-container">
+<h2>start_container<a class="headerlink" href="#start-container" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><strong>Scope</strong>: “function”</p></li>
+<li><p><strong>Functionality</strong>: start containers.</p></li>
+<li><p><strong>Dependencies</strong>: <a class="reference internal" href="#fixture-container"><span class="std std-ref">container</span></a></p></li>
+<li><p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">prestest</span><span class="p">(</span><span class="n">allow_table_modification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">container_folder</span><span class="o">=</span><span class="s2">&quot;Your docker hive folder&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl class="simple">
+<dt>container_folder</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: PosixPath or str</p></li>
+<li><p><strong>Required</strong>: No</p></li>
+<li><p><strong>Default</strong>: ‘./docker-hive’</p></li>
+<li><p><strong>Functionality</strong>: docker hive repository folder location. It must be cloned from
+<a class="reference external" href="https://github.com/big-data-europe/docker-hive">docker-hive</a>.</p></li>
+</ul>
+</dd>
+<dt>allow_table_modification</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: boolean</p></li>
+<li><p><strong>Required</strong>: No</p></li>
+<li><p><strong>Default</strong>: False</p></li>
+<li><p><strong>Functionality</strong>: Whether presto connector is allowed to modify hive tables. This modifies <cite>hive.properties</cite> file
+inside presto connector container. It automatically restart the container. This may take up to 40 seconds</p></li>
+</ul>
+</dd>
+<dt>reset</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: boolean</p></li>
+<li><p><strong>Required</strong>: No</p></li>
+<li><p><strong>Default</strong>: False</p></li>
+<li><p><strong>Functionality</strong>: Whether containers are reset to factory states. This can help purge all changes you have made
+to the containers.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="create-temporary-table">
+<h2>create_temporary_table<a class="headerlink" href="#create-temporary-table" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><strong>Scope</strong>: “function”</p></li>
+<li><p><strong>Functionality</strong>: create temporary hive/presto tables and clean up after test.</p></li>
+<li><p><strong>Dependencies</strong>: <a class="reference internal" href="#fixture-db-manager"><span class="std std-ref">db_manager</span></a>, <a class="reference internal" href="#fixture-container"><span class="std std-ref">container</span></a></p></li>
+<li><p><strong>Example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">prestest</span><span class="p">(</span><span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;sandbox.test_temp_table&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="n">create_temporary_table_query</span><span class="p">,</span>
+                      <span class="n">file</span><span class="o">=</span><span class="n">resource_folder</span> <span class="o">/</span> <span class="s2">&quot;sample_table.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl>
+<dt>table_name:</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: str</p></li>
+<li><p><strong>Required</strong>: yes</p></li>
+<li><p><strong>Functionality</strong>: name of the table to be created. For example, “sandbox.test_table”</p></li>
+</ul>
+</dd>
+<dt>query:</dt><dd><ul>
+<li><p><strong>Type</strong>: str</p></li>
+<li><p><strong>Required</strong>: yes</p></li>
+<li><p><strong>Functionality</strong>: query used to create the target table specified by <cite>table_name</cite>. This needs to have a python
+string placeholder ‘table_name’. For example,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;CREATE TABLE </span><span class="si">{table_name}</span><span class="s2"> (</span>
+<span class="s2">      col1 INTEGER,</span>
+<span class="s2">      col2 STRING</span>
+<span class="s2">  )</span>
+<span class="s2">  ROW FORMAT DELIMITED</span>
+<span class="s2">  FIELDS TERMINATED BY &#39;,&#39;</span>
+<span class="s2">  STORED AS TEXTFILE</span>
+<span class="s2">  &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</dd>
+<dt>file:</dt><dd><ul class="simple">
+<li><p><strong>Type</strong>: PosixPath or str</p></li>
+<li><p><strong>Required</strong>: yes</p></li>
+<li><p><strong>Functionality</strong>: path to the file to be inserted into the created table</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="id3">
+<h1>Fixtures<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-prestest.fixtures"></span><dl class="py exception">
+<dt id="prestest.fixtures.PrestestException">
+<em class="property">exception </em><code class="sig-prename descclassname">prestest.fixtures.</code><code class="sig-name descname">PrestestException</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">msg</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/fixtures.html#PrestestException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.fixtures.PrestestException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="prestest.fixtures.container">
+<code class="sig-prename descclassname">prestest.fixtures.</code><code class="sig-name descname">container</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="container.html#prestest.container.Container" title="prestest.container.Container">prestest.container.Container</a><a class="reference internal" href="_modules/prestest/fixtures.html#container"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.fixtures.container" title="Permalink to this definition">¶</a></dt>
+<dd><p>a Container fixture. You may pass “container_folder” argument in pytest.mark.prestest. By default, it uses</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="prestest.fixtures.create_temporary_table">
+<code class="sig-prename descclassname">prestest.fixtures.</code><code class="sig-name descname">create_temporary_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">db_manager</span></em>, <em class="sig-param"><span class="n">container</span></em><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/prestest/fixtures.html#create_temporary_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.fixtures.create_temporary_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>create temporary table in container that gets cleaned up after test. You may pass the following param in
+pytest.mark.prestest:</p>
+<ul class="simple">
+<li><p>table_name: string. name of the table, for example: sandbox.test_table</p></li>
+<li><p>query: string. hive query used to create the table. You may have a string placeholder: table_name in it.</p></li>
+<li><p>file: string or PosixPath. path to local file used to insert to the temporary file</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>created table name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="prestest.fixtures.db_manager">
+<code class="sig-prename descclassname">prestest.fixtures.</code><code class="sig-name descname">db_manager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/fixtures.html#db_manager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.fixtures.db_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a DBManager object using specified container. You may pass the location of hive docker in
+pytest.mark.prestest in “container_folder” argument.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="prestest.fixtures.start_container">
+<code class="sig-prename descclassname">prestest.fixtures.</code><code class="sig-name descname">start_container</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">container</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/fixtures.html#start_container"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.fixtures.start_container" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start hive container with presto connector. You may pass the following args in pytest.mark.prestest:</p>
+<ul class="simple">
+<li><p>allow_table_modification: enable table to be dropped from presto client</p></li>
+<li><p>reset: completely wipe containers before starting. This will reset the containers to factory state.</p></li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="db.html" class="btn btn-neutral float-left" title="DB" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Weiwen Gu
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

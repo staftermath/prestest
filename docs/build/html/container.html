@@ -1,0 +1,430 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Container &mdash; prestest 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="DB" href="db.html" />
+    <link rel="prev" title="Welcome to prestest’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> prestest
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fixtures.html">Fixture Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fixtures.html#id3">Fixtures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">prestest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Container</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/container.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-prestest.container">
+<span id="container"></span><h1>Container<a class="headerlink" href="#module-prestest.container" title="Permalink to this headline">¶</a></h1>
+<p>implement functions to build, start, stop and clean up containers</p>
+<dl class="py class">
+<dt id="prestest.container.Container">
+<em class="property">class </em><code class="sig-prename descclassname">prestest.container.</code><code class="sig-name descname">Container</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">docker_folder</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pathlib.PosixPath<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>contains method to control and examine hive/presto container used for test</p>
+<dl class="py method">
+<dt id="prestest.container.Container.append_file">
+<code class="sig-name descname">append_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">container_name</span></em>, <em class="sig-param"><span class="n">file</span></em>, <em class="sig-param"><span class="n">text</span></em>, <em class="sig-param"><span class="n">skip_if_exists</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">user</span><span class="o">=</span><span class="default_value">'root'</span></em>, <em class="sig-param"><span class="n">from_new_line</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.append_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.append_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>append a line to target <cite>file</cite> in target <cite>container_name</cite>. You can choose to skip (by default) if the text
+already exists in target file. you may change user in the docker by specifying <cite>user</cite>. If <cite>from_new_line</cite> is
+True, the text will always be appended in a new line. otherwise directly appended at EOF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>container_name</strong> – name of the container the target file is contained in.</p></li>
+<li><p><strong>file</strong> – target file in the container.</p></li>
+<li><p><strong>text</strong> – content to append.</p></li>
+<li><p><strong>skip_if_exists</strong> – if text already exists in file, do not append duplicate. the checking will strip white
+space.</p></li>
+<li><p><strong>user</strong> – user used to execute the operation. e.g. ‘root’, ‘1000’</p></li>
+<li><p><strong>from_new_line</strong> – if True, the text will always be appended from a new line.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.copy_from_local">
+<code class="sig-name descname">copy_from_local</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">from_local</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pathlib.PosixPath<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">to_container</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pathlib.PosixPath<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">container_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'docker-hive_hive-server_1'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.copy_from_local"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.copy_from_local" title="Permalink to this definition">¶</a></dt>
+<dd><p>copy folder or file from host to container</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>from_local</strong> – target folder or file to be copied.</p></li>
+<li><p><strong>to_container</strong> – container path where the folder or file will be copied to.</p></li>
+<li><p><strong>container_name</strong> – name of the container containing the target file <cite>to_container</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.delete">
+<code class="sig-name descname">delete</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span></em>, <em class="sig-param"><span class="n">container_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'docker-hive_hive-server_1'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>call rm -rf command on <cite>target</cite> inside datanode container</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – target folder or file</p></li>
+<li><p><strong>container_name</strong> – name of the container containing the target file</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.download_from_container">
+<code class="sig-name descname">download_from_container</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">from_container</span></em>, <em class="sig-param"><span class="n">to_local</span></em>, <em class="sig-param"><span class="n">container_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'docker-hive_hive-server_1'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.download_from_container"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.download_from_container" title="Permalink to this definition">¶</a></dt>
+<dd><p>download target folder or file to host</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>from_container</strong> – target folder or file to be downloaded to host.</p></li>
+<li><p><strong>to_local</strong> – location on host.</p></li>
+<li><p><strong>container_name</strong> – name of the container containing the target file <cite>from_container</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.enable_table_modification">
+<code class="sig-name descname">enable_table_modification</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.enable_table_modification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.enable_table_modification" title="Permalink to this definition">¶</a></dt>
+<dd><p>edit hive.properties file in presto connector server so that hive table can be modified in presto.
+note that this may fail if presto server version changes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.execute_command">
+<code class="sig-name descname">execute_command</code><span class="sig-paren">(</span><em class="sig-param">command</em>, <em class="sig-param">exception=&lt;class 'RuntimeError'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.execute_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.execute_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>execute a command as subprocess, raise specific type of exception if any error occurs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> – a string of terminal command</p></li>
+<li><p><strong>exception</strong> – type of exception raised when any error happends.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.is_healthy">
+<code class="sig-name descname">is_healthy</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/prestest/container.html#Container.is_healthy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.is_healthy" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if container is healthy. if exited containers are contained not healthy. if health condition is not
+configured, the container is considered healthy. A healthy container is read to take request such as presto
+queries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>whether container is healthy or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.is_presto_started">
+<code class="sig-name descname">is_presto_started</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/prestest/container.html#Container.is_presto_started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.is_presto_started" title="Permalink to this definition">¶</a></dt>
+<dd><p>examine if presto server has properly started. This will try 5 times before determining that the server
+cannot be connected. It will sleep 5 seconds between retries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>whether presto server is started.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.is_started">
+<code class="sig-name descname">is_started</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/prestest/container.html#Container.is_started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.is_started" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if container has properly started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">allow_table_modification</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">autostart</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">until_started</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove created container. This will clear all data and metastore and restore the container to factory state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>allow_table_modification</strong> – reset and allow presto connector to modify hive tables</p></li>
+<li><p><strong>autostart</strong> – restart container after reset</p></li>
+<li><p><strong>until_started</strong> – wait until completed restarted. if True, container will be force autostarted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">until_started</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>start docker containers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>stop containers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="prestest.container.Container.upload_temp_table_file">
+<code class="sig-name descname">upload_temp_table_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">local_file</span></em>, <em class="sig-param"><span class="n">container_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'docker-hive_hive-server_1'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#Container.upload_temp_table_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.Container.upload_temp_table_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a context manager to upload the file to a temp file in container. See <cite>TempContainerFile</cite> for details</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">upload_temp_table_file</span><span class="p">(</span><span class="s1">&#39;local_file&#39;</span><span class="p">,</span> <span class="s1">&#39;target_container&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="c1"># do something with f where f is the temporary file name in the container.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="prestest.container.TempContainerFile">
+<em class="property">class </em><code class="sig-prename descclassname">prestest.container.</code><code class="sig-name descname">TempContainerFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">container</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#prestest.container.Container" title="prestest.container.Container">prestest.container.Container</a></span></em>, <em class="sig-param"><span class="n">local_file</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pathlib.PosixPath<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">container_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'docker-hive_hive-server_1'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prestest/container.html#TempContainerFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prestest.container.TempContainerFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a context manager class used to upload file to temporary file in target container. You need to pass a Container
+object and target <cite>container_name</cite>. The temporary file will be removed at exit. Note that the temporary file in
+target container will have the same permission as <cite>local_file</cite>.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="db.html" class="btn btn-neutral float-right" title="DB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to prestest’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Weiwen Gu
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>prestest.db &mdash; prestest 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> prestest
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../container.html">Container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../fixtures.html">Fixture Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../fixtures.html#id3">Fixtures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">prestest</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>prestest.db</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for prestest.db</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;implement interface to create and clean up tables</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">PosixPath</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">thrift.transport.TTransport</span> <span class="kn">import</span> <span class="n">TTransportException</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+
+<span class="kn">from</span> <span class="nn">.container</span> <span class="kn">import</span> <span class="n">PRESTO_URL</span><span class="p">,</span> <span class="n">Container</span>
+
+<div class="viewcode-block" id="DBManager"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager">[docs]</a><span class="k">class</span> <span class="nc">DBManager</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;implement method to create, remove tables in testing framework.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">docker_folder</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hive_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_hive_client</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">presto_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_presto_client</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="n">docker_folder</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DBManager.get_hive_client"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.get_hive_client">[docs]</a>    <span class="k">def</span> <span class="nf">get_hive_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">create_engine</span><span class="p">(</span><span class="s2">&quot;hive://localhost:10000&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DBManager.get_presto_client"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.get_presto_client">[docs]</a>    <span class="k">def</span> <span class="nf">get_presto_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">PRESTO_URL</span><span class="p">,</span> <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;protocol&quot;</span><span class="p">:</span> <span class="s2">&quot;http&quot;</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="DBManager.create_table"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.create_table">[docs]</a>    <span class="k">def</span> <span class="nf">create_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PosixPath</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;create table based on the query and insert file into the table. this method intends to help set up tables</span>
+<span class="sd">        used for testing. the database for the table will be created (but not dropped after)</span>
+
+<span class="sd">        :param table: name of the table. for example, &#39;sandbox.my_table&#39;</span>
+<span class="sd">        :param query: a query used to create hive table.</span>
+<span class="sd">        :param file: a file inserted to the table. This will overwrite the table if it already exists.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="n">create_db</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;CREATE DATABASE IF NOT EXISTS </span><span class="si">{</span><span class="n">schema</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="n">repeat</span> <span class="o">=</span> <span class="mi">3</span>
+
+        <span class="k">while</span> <span class="n">repeat</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">run_hive_query</span><span class="p">(</span><span class="n">create_db</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="n">TTransportException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;error connecting to database. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+                <span class="n">repeat</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;presto database cannot be connected probably.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop_table</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">upload_temp_table_file</span><span class="p">(</span><span class="n">local_file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_hive_query</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="n">insert_to_table</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;LOAD DATA LOCAL INPATH &#39;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&#39; OVERWRITE INTO TABLE </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_hive_query</span><span class="p">(</span><span class="n">insert_to_table</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DBManager.drop_table"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.drop_table">[docs]</a>    <span class="k">def</span> <span class="nf">drop_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;drop target table in container hive.</span>
+
+<span class="sd">        :param table: name of the table.</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">drop_table</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;DROP TABLE IF EXISTS </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_hive_query</span><span class="p">(</span><span class="n">drop_table</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DBManager.read_sql"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.read_sql">[docs]</a>    <span class="k">def</span> <span class="nf">read_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;download presto query result into a pandas dataframe.</span>
+
+<span class="sd">        :param query: a presto query.</span>
+<span class="sd">        :return: a dataframe containing the returned contents of the query.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">presto_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">con</span><span class="o">=</span><span class="n">con</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="DBManager.run_hive_query"><a class="viewcode-back" href="../../db.html#prestest.db.DBManager.run_hive_query">[docs]</a>    <span class="k">def</span> <span class="nf">run_hive_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;execute a hive query</span>
+
+<span class="sd">        :param query: hive query string</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hive_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Weiwen Gu
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
